@@ -2,6 +2,7 @@ package GAPL_project3;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import org.ggp.base.util.statemachine.MachineState;
@@ -19,6 +20,7 @@ public class GameTree {
 	private Map<Role,HashMap<Move,Float>> Qs = new HashMap<Role, HashMap<Move,Float>>();
 	private Map<Role,HashMap<Move,Integer>> Ns = new HashMap<Role, HashMap<Move,Integer>>();
 	private int N;
+	private int noChildren;
 
 	public GameTree(MachineState s, GameTree p) {
 		state = s;
@@ -33,7 +35,7 @@ public class GameTree {
 		return state;
 	}
 
-	public void addChild(ArrayList<Move> M, MachineState s) {
+	public void addChild(List<Move> M, MachineState s) {
 		Move[] moves = M.toArray(new Move[M.size()]);
 		children.put(moves, new GameTree(s,this));
 		//children.add(new Pair<Move,GameTree>(m,t));
@@ -41,6 +43,15 @@ public class GameTree {
 
 	public GameTree getChild(Move[] M) {
 		return children.get(M);
+	}
+
+	public GameTree[] getChildren()
+	{
+		List<GameTree> arr = new ArrayList<GameTree>();
+		for (Move[] key : children.keySet()) {
+		    arr.add(children.get(key));
+		}
+		return arr.toArray(new GameTree[arr.size()]);
 	}
 
 	//public List<Pair<Move,GameTree>> getChildren() {
@@ -73,5 +84,17 @@ public class GameTree {
 
 	public void incrNoSimulation() {
 		N++;
+	}
+
+	@Override
+	public String toString()
+	{
+		String s = "Current state: \n";
+		s += state.toString() + "\n\nchildren: \n";
+		for(GameTree c : this.getChildren())
+		{
+			s += c.getState().toString() + "\n";
+		}
+		return s;
 	}
 }
