@@ -1,21 +1,20 @@
 package GAPL_project3;
 
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 import org.ggp.base.util.statemachine.MachineState;
 import org.ggp.base.util.statemachine.Move;
 import org.ggp.base.util.statemachine.Role;
 
-import javafx.util.Pair;
-
 public class GameTree {
 
 	private GameTree parent;
-	private List<Pair<Move,GameTree>> children = new ArrayList<>();
+	private Map<Move[],GameTree> children = new HashMap<Move[],GameTree>();
+	//private List<Pair<Move,GameTree>> children = new ArrayList<>();
 	private MachineState state;
+	private Move[][] legalMoves; // 2d array [no. roles][no. moves for given role]
+	private double[][] Q; // 2d array of Q values for each role for each move
 	private Map<Role,HashMap<Move,Float>> Qs = new HashMap<Role, HashMap<Move,Float>>();
 	private Map<Role,HashMap<Move,Integer>> Ns = new HashMap<Role, HashMap<Move,Integer>>();
 	private int N;
@@ -33,12 +32,21 @@ public class GameTree {
 		return state;
 	}
 
-	public void addChild(Move m, GameTree t) {
-		children.add(new Pair<Move,GameTree>(m,t));
+	public void addChild(Move[] M, GameTree t) {
+		children.put(M,t);
+		//children.add(new Pair<Move,GameTree>(m,t));
 	}
 
-	public List<Pair<Move,GameTree>> getChildren() {
-		return children;
+	public GameTree getChild(Move[] M) {
+		return children.get(M);
+	}
+
+	//public List<Pair<Move,GameTree>> getChildren() {
+	//	return children;
+	//}
+
+	public double[][] getQScores() {
+		return Q;
 	}
 
 	public float getQScore(Role r, Move m) {
