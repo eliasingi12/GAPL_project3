@@ -1,5 +1,6 @@
 package GAPL_project3;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -32,8 +33,9 @@ public class GameTree {
 		return state;
 	}
 
-	public void addChild(Move[] M, MachineState s) {
-		children.put(M, new GameTree(s,this));
+	public void addChild(ArrayList<Move> M, MachineState s) {
+		Move[] moves = M.toArray(new Move[M.size()]);
+		children.put(moves, new GameTree(s,this));
 		//children.add(new Pair<Move,GameTree>(m,t));
 	}
 
