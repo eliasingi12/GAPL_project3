@@ -32,8 +32,8 @@ public class GameTree {
 		return state;
 	}
 
-	public void addChild(Move[] M, GameTree t) {
-		children.put(M,t);
+	public void addChild(Move[] M, MachineState s) {
+		children.put(M, new GameTree(s,this));
 		//children.add(new Pair<Move,GameTree>(m,t));
 	}
 
