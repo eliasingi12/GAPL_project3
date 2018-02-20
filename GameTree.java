@@ -8,23 +8,39 @@ import java.util.Map;
 import org.ggp.base.util.statemachine.MachineState;
 import org.ggp.base.util.statemachine.Move;
 import org.ggp.base.util.statemachine.Role;
+import org.ggp.base.util.statemachine.StateMachine;
+import org.ggp.base.util.statemachine.exceptions.MoveDefinitionException;
+import org.ggp.base.util.statemachine.exceptions.TransitionDefinitionException;
 
 public class GameTree {
 
 	private GameTree parent;
 	private Map<Move[],GameTree> children = new HashMap<Move[],GameTree>();
-	//private List<Pair<Move,GameTree>> children = new ArrayList<>();
 	private MachineState state;
-	private Move[][] legalMoves; // 2d array [no. roles][no. moves for given role]
-	private double[][] Q; // 2d array of Q values for each role for each move
-	private Map<Role,HashMap<Move,Float>> Qs = new HashMap<Role, HashMap<Move,Float>>();
-	private Map<Role,HashMap<Move,Integer>> Ns = new HashMap<Role, HashMap<Move,Integer>>();
-	private int N;
-	private int noChildren;
+	private StateMachine machine;
+	private Move[][] legalMoves; // 2d array [no. roles][no. legal moves for given role]
+	private double[][] Qs; // 2d array of Q values for each role for each move
+	private int[][] Ns;
+	private int N = 0;
+	private int noChildren = 0;
 
-	public GameTree(MachineState s, GameTree p) {
+	public GameTree(MachineState s, GameTree p, StateMachine sm) throws MoveDefinitionException {
 		state = s;
 		parent = p;
+		machine = sm;
+		initalize();
+	}
+
+	private void initalize() throws MoveDefinitionException {
+		// Init legal moves and Qs and Ns to 0
+		List<Role> roles = machine.getRoles();
+		for(int i = 0; i < roles.size(); i++) {
+			List<Move> moves = machine.getLegalMoves(state, roles.get(i));
+			Move[] movesArr = moves.toArray(new Move[moves.size()]);
+			legalMoves[i] = movesArr;
+			Qs[i] = new double[movesArr.length];
+			Ns[i] = new int[movesArr.length];
+		}
 	}
 
 	public GameTree getParent() {
@@ -35,18 +51,20 @@ public class GameTree {
 		return state;
 	}
 
-	public void addChild(List<Move> M, MachineState s) {
+	// addChild is called with jointMoves
+	public void addChild(List<Move> M) throws MoveDefinitionException, TransitionDefinitionException {
+		MachineState childState = machine.getNextState(state, M);
 		Move[] moves = M.toArray(new Move[M.size()]);
-		children.put(moves, new GameTree(s,this));
-		//children.add(new Pair<Move,GameTree>(m,t));
+		children.put(moves, new GameTree(childState,this,machine));
+		noChildren += 1;
 	}
 
-	public GameTree getChild(Move[] M) {
-		return children.get(M);
+	public GameTree getChild(List<Move> M) {
+		Move[] moves = M.toArray(new Move[M.size()]);
+		return children.get(moves);
 	}
 
-	public GameTree[] getChildren()
-	{
+	public GameTree[] getChildren() {
 		List<GameTree> arr = new ArrayList<GameTree>();
 		for (Move[] key : children.keySet()) {
 		    arr.add(children.get(key));
@@ -54,28 +72,28 @@ public class GameTree {
 		return arr.toArray(new GameTree[arr.size()]);
 	}
 
-	//public List<Pair<Move,GameTree>> getChildren() {
-	//	return children;
-	//}
-
 	public double[][] getQScores() {
-		return Q;
+		return Qs;
 	}
 
-	public float getQScore(Role r, Move m) {
-		return Qs.get(r).get(m).floatValue();
+	public double getQScore(int role, int move) {
+		return Qs[role][move];
 	}
 
-	public void updateQScore(Role r, Move m, Float v) {
-		Qs.get(r).put(m,v);
+	public void updateQScore(int role, int move, double val) {
+		Qs[role][move] = val;
 	}
 
-	public int getNoSimulations(Role r, Move m) {
-		return Ns.get(r).get(m).intValue();
+	public int[][] getNs() {
+		return Ns;
 	}
 
-	public void updateNoSimulations(Role r, Move m, Integer v) {
-		Ns.get(r).put(m,v);
+	public int getNs(int role, int move) {
+		return Ns[role][move];
+	}
+
+	public void incrNs(int role, int move) {
+		Ns[role][move] += 1;
 	}
 
 	public int getNoSimulation() {
@@ -89,8 +107,8 @@ public class GameTree {
 	@Override
 	public String toString()
 	{
-		String s = "Current state: \n";
-		s += state.toString() + "\n\nchildren: \n";
+		String s = "\nCurrent state:\n";
+		s += state.toString() + "\n\nChildren:\n";
 		for(GameTree c : this.getChildren())
 		{
 			s += c.getState().toString() + "\n";

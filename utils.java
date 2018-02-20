@@ -8,6 +8,7 @@ import java.util.List;
 
 import org.ggp.base.util.game.Game;
 import org.ggp.base.util.gdl.grammar.Gdl;
+import org.ggp.base.util.statemachine.Move;
 import org.ggp.base.util.statemachine.StateMachine;
 import org.ggp.base.util.statemachine.implementation.prover.ProverStateMachine;
 
@@ -38,5 +39,20 @@ public class utils {
 		s.initialize(rules);
 
 		return s;
+	}
+
+	public static Move UCT(Move[] moves, double[] Qs, int[] Ns, int N, double C) {
+		double max = Double.MIN_VALUE;
+		Move bestMove = null;
+		double val;
+		for(int i = 0; i < moves.length; i++) {
+			if (Ns[i] == 0) return moves[i];
+			val = Qs[i] + C*Math.sqrt(Math.log((double) N)/((double) Ns[i]));
+			if (val > max) {
+				max = val;
+				bestMove = moves[i];
+			}
+		}
+		return bestMove;
 	}
 }
