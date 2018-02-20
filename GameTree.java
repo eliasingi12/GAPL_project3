@@ -19,6 +19,7 @@ public class GameTree {
 	private MachineState state;
 	private StateMachine machine;
 	private Move[][] legalMoves; // 2d array [no. roles][no. legal moves for given role]
+	private List<Role> roles;
 	private double[][] Qs; // 2d array of Q values for each role for each move
 	private int[][] Ns;
 	private int N = 0;
@@ -33,7 +34,7 @@ public class GameTree {
 
 	private void initalize() throws MoveDefinitionException {
 		// Init legal moves and Qs and Ns to 0
-		List<Role> roles = machine.getRoles();
+		roles = machine.getRoles();
 		for(int i = 0; i < roles.size(); i++) {
 			List<Move> moves = machine.getLegalMoves(state, roles.get(i));
 			Move[] movesArr = moves.toArray(new Move[moves.size()]);
@@ -51,6 +52,18 @@ public class GameTree {
 		return state;
 	}
 
+	public Move[][] getLegalMoves() {
+		return legalMoves;
+	}
+
+	public List<Role> getRoles() {
+		return roles;
+	}
+
+	public int getNoRoles() {
+		return roles.size();
+	}
+
 	// addChild is called with jointMoves
 	public void addChild(List<Move> M) throws MoveDefinitionException, TransitionDefinitionException {
 		MachineState childState = machine.getNextState(state, M);
@@ -59,8 +72,11 @@ public class GameTree {
 		noChildren += 1;
 	}
 
-	public GameTree getChild(List<Move> M) {
+	public GameTree getChild(List<Move> M) throws MoveDefinitionException, TransitionDefinitionException {
 		Move[] moves = M.toArray(new Move[M.size()]);
+		if (children.get(moves) == null) {
+			addChild(M);
+		}
 		return children.get(moves);
 	}
 
@@ -81,7 +97,7 @@ public class GameTree {
 	}
 
 	public void updateQScore(int role, int move, double val) {
-		Qs[role][move] = val;
+		Qs[role][move] += (val - Qs[role][move])/((double) Ns[role][move] + 1);
 	}
 
 	public int[][] getNs() {

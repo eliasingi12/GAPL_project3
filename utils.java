@@ -4,12 +4,20 @@ import java.io.BufferedReader;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
+import java.util.Random;
 
 import org.ggp.base.util.game.Game;
 import org.ggp.base.util.gdl.grammar.Gdl;
+import org.ggp.base.util.statemachine.MachineState;
 import org.ggp.base.util.statemachine.Move;
+import org.ggp.base.util.statemachine.Role;
 import org.ggp.base.util.statemachine.StateMachine;
+import org.ggp.base.util.statemachine.exceptions.GoalDefinitionException;
+import org.ggp.base.util.statemachine.exceptions.MoveDefinitionException;
+import org.ggp.base.util.statemachine.exceptions.TransitionDefinitionException;
 import org.ggp.base.util.statemachine.implementation.prover.ProverStateMachine;
 
 
@@ -54,5 +62,36 @@ public class utils {
 			}
 		}
 		return bestMove;
+	}
+
+	public static double rollout(GameTree t, StateMachine machine, Role role) throws GoalDefinitionException, MoveDefinitionException, TransitionDefinitionException {
+		MachineState ms = t.getState();
+		if (machine.isTerminal(ms)) {
+			return (double) machine.getGoal(ms, role);
+		}else{
+			Move[] randMove = GetRandJointMoves(t.getLegalMoves());
+			GameTree randChild = t.getChild(Arrays.asList(randMove));
+			return rollout(randChild, machine, role);
+		}
+	}
+
+	public static void backpropagate(GameTree t, StateMachine machine, double goalVal, ArrayList<int[]> moveList) {
+		int[] theMoves = moveList.remove(moveList.size()-1);
+		for(int i = 0; i < theMoves.length; i++) {
+			t.updateQScore(i, theMoves[i], goalVal);
+		}
+		if (t.getParent() != null) {
+			backpropagate(t.getParent(), machine, goalVal, moveList);
+		}
+	}
+
+	public static Move[] GetRandJointMoves(Move[][] legalMoves) {
+		Move[] jointMove = new Move[legalMoves.length];
+		for(int i = 0; i < legalMoves.length; i++) {
+			int noLegalMoves = legalMoves[i].length;
+			int randint = (new Random()).nextInt(noLegalMoves);
+			jointMove[i] = legalMoves[i][randint];
+		}
+		return jointMove;
 	}
 }
