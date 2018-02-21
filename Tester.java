@@ -5,13 +5,17 @@ import java.util.List;
 
 import org.ggp.base.util.statemachine.MachineState;
 import org.ggp.base.util.statemachine.Move;
+import org.ggp.base.util.statemachine.Role;
 import org.ggp.base.util.statemachine.StateMachine;
+import org.ggp.base.util.statemachine.exceptions.GoalDefinitionException;
 import org.ggp.base.util.statemachine.exceptions.MoveDefinitionException;
 import org.ggp.base.util.statemachine.exceptions.TransitionDefinitionException;
 
+import javafx.util.Pair;
+
 public class Tester {
 
-	public static void main(String[] args) throws IOException, MoveDefinitionException, TransitionDefinitionException{
+	public static void main(String[] args) throws IOException, MoveDefinitionException, TransitionDefinitionException, GoalDefinitionException{
 
 		String prefix = System.getProperty("user.dir") + "/src/main/java/GAPL_project3/";
 		StateMachine sm = utils.getGameSM(prefix + "tictactoeXwin.txt");
@@ -32,6 +36,9 @@ public class Tester {
 		}
 
 		System.out.println(test.toString());
+		Role role = sm.getRoles().get(0);
+		GameTree t;
+		Pair<Move,GameTree> p = utils.MCTS(test, sm, role, 5000, 50);
 
 	}
 }

@@ -1,6 +1,7 @@
 package GAPL_project3;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -20,6 +21,7 @@ public class GameTree {
 	private StateMachine machine;
 	private Move[][] legalMoves; // 2d array of legal moves for every role [no. roles][no. legal moves for given role]
 	private List<Role> roles;
+	private Map<Role,Integer> roleIndex = new HashMap<Role,Integer>();
 	private int nRoles;
 	private double[][] Qs; // 2d array of Q values for each role for each move
 	private int[][] Ns;
@@ -37,6 +39,9 @@ public class GameTree {
 		// Init legal moves and Qs and Ns to 0
 		roles = machine.getRoles();
 		nRoles = roles.size();
+		for(int i = 0; i < nRoles; i++) {
+			roleIndex.put(roles.get(i), (Integer) i);
+		}
 		legalMoves = new Move[nRoles][];
 		Qs = new double[nRoles][];
 		Ns = new int[nRoles][];
@@ -70,6 +75,10 @@ public class GameTree {
 		return nRoles;
 	}
 
+	public int getRoleIndex(Role role) {
+		return roleIndex.get(role).intValue();
+	}
+
 	public int getNoInitializedChildren() {
 		return noChildren;
 	}
@@ -81,12 +90,31 @@ public class GameTree {
 		noChildren += 1;
 	}
 
+	public void addChild(Move[] M) throws MoveDefinitionException, TransitionDefinitionException {
+		List<Move> moves = Arrays.asList(M);
+		addChild(moves);
+	}
+
 	public GameTree getChild(List<Move> M) throws MoveDefinitionException, TransitionDefinitionException {
 		Move[] moves = M.toArray(new Move[M.size()]);
 		if (children.get(moves) == null) {
 			addChild(M);
 		}
 		return children.get(moves);
+	}
+
+	public GameTree getChild(Move[] M) throws MoveDefinitionException, TransitionDefinitionException {
+		List<Move> moves = Arrays.asList(M);
+		return getChild(moves);
+	}
+
+	public boolean hasChild(List<Move> M) {
+		Move[] moves = M.toArray(new Move[M.size()]);
+		return (children.get(moves) != null);
+	}
+
+	public boolean hasChild(Move[] M) {
+		return (children.get(M) != null);
 	}
 
 	public GameTree[] getChildren() {
