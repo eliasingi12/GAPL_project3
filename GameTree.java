@@ -18,12 +18,12 @@ public class GameTree {
 	private Map<List<Move>,GameTree> children = new HashMap<List<Move>,GameTree>();
 	private MachineState state;
 	private StateMachine machine;
-	private Move[][] legalMoves; // 2d array of legal moves for every role [no. roles][no. legal moves for given role]
 	private List<Role> roles;
 	private Map<Role,Integer> roleIndex = new HashMap<Role,Integer>();
 	private int nRoles;
-	private double[][] Qs; // 2d array of Q values for each role for each move
-	private int[][] Ns;
+	private Move[][] legalMoves = null; // 2d array of legal moves for every role [no. roles][no. legal moves for given role]
+	private double[][] Qs = null; // 2d array of Q values for each role for each move
+	private int[][] Ns = null;
 	private int N = 0;
 	private int noChildren = 0; // Number of actual initailized child nodes
 
@@ -46,11 +46,13 @@ public class GameTree {
 		Ns = new int[nRoles][];
 		Move[] movesArr;
 		for(int i = 0; i < roles.size(); i++) {
-			List<Move> moves = machine.getLegalMoves(state, roles.get(i));
-			movesArr = moves.toArray(new Move[moves.size()]);
-			legalMoves[i] = movesArr;
-			Qs[i] = new double[movesArr.length];
-			Ns[i] = new int[movesArr.length];
+			if(!machine.isTerminal(this.getState())) {
+				List<Move> moves = machine.getLegalMoves(state, roles.get(i));
+				movesArr = moves.toArray(new Move[moves.size()]);
+				legalMoves[i] = movesArr;
+				Qs[i] = new double[movesArr.length];
+				Ns[i] = new int[movesArr.length];
+			}
 		}
 	}
 
