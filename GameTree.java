@@ -24,7 +24,7 @@ public class GameTree {
 	private double[][] Qs; // 2d array of Q values for each role for each move
 	private int[][] Ns;
 	private int N = 0;
-	private int noChildren = 0;
+	private int noChildren = 0; // Number of actual initailized child nodes
 
 	public GameTree(MachineState state, GameTree parent, StateMachine sm) throws MoveDefinitionException {
 		this.state = state;
@@ -70,6 +70,10 @@ public class GameTree {
 		return nRoles;
 	}
 
+	public int getNoInitializedChildren() {
+		return noChildren;
+	}
+
 	public void addChild(List<Move> M) throws MoveDefinitionException, TransitionDefinitionException {
 		MachineState childState = machine.getNextState(state, M);
 		Move[] moves = M.toArray(new Move[M.size()]);
@@ -105,7 +109,7 @@ public class GameTree {
 		Qs[role][move] += (val - Qs[role][move])/((double) Ns[role][move] + 1);
 	}
 
-	public int[][] getNs() {
+	public int[][] getAllNs() {
 		return Ns;
 	}
 

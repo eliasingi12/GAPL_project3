@@ -20,6 +20,8 @@ import org.ggp.base.util.statemachine.exceptions.MoveDefinitionException;
 import org.ggp.base.util.statemachine.exceptions.TransitionDefinitionException;
 import org.ggp.base.util.statemachine.implementation.prover.ProverStateMachine;
 
+import javafx.util.Pair;
+
 
 public class utils {
 
@@ -69,22 +71,22 @@ public class utils {
 	 * @param N - number of times current state has been visited
 	 * @param C - controls exploration (higher C => values less explored are
 	 * prioritised)  vs. exploitation (lower C => values with better Q score
-	 * are prioritised). Typical values for C are in the interval [0,10]
+	 * are prioritised). Typical values for C are in the interval [0,100]
 	 * @return next Move for a given role
 	 */
-	public static Move UCT(Move[] moves, double[] Qs, int[] Ns, int N, double C) {
+	public static int UCT(Move[] moves, double[] Qs, int[] Ns, int N, double C) {
 		double max = Double.MIN_VALUE;
-		Move bestMove = null;
+		int returnIndex = 0;
 		double val;
 		for(int i = 0; i < moves.length; i++) {
-			if (Ns[i] == 0 && C != 0) return moves[i];
+			if (Ns[i] == 0 && C != 0) return i;
 			val = Qs[i] + C*Math.sqrt(Math.log((double) N)/((double) Ns[i]));
 			if (val > max) {
 				max = val;
-				bestMove = moves[i];
+				returnIndex = i;
 			}
 		}
-		return bestMove;
+		return returnIndex;
 	}
 
 	/**
@@ -99,7 +101,7 @@ public class utils {
 	 */
 	public static double[] rollout(GameTree t, StateMachine machine) throws GoalDefinitionException, MoveDefinitionException, TransitionDefinitionException {
 		MachineState ms = t.getState();
-		if (machine.isTerminal(ms)) {
+		if (machine.isTerminal(ms)) { // Base case
 			List<Role> roles = machine.getRoles();
 			double[] goalValues = new double[roles.size()];
 			for(int i = 0; i < roles.size(); i++) {
@@ -133,13 +135,14 @@ public class utils {
 	 * taken. This assumes the order of roles is the same as the StateMachine
 	 * would fetch them in
 	 */
-	public static void backpropagate(GameTree t, StateMachine machine, double[] goalVal, ArrayList<int[]> moveList) {
+	public static void backPropagate(GameTree t, StateMachine machine, double[] goalVal, ArrayList<int[]> moveList) {
 		int[] theMoves = moveList.remove(moveList.size()-1);
 		for(int i = 0; i < theMoves.length; i++) {
 			t.updateQScore(i, theMoves[i], goalVal[i]);
+			t.incrNs(i, theMoves[i]);
 		}
-		if (t.getParent() != null) {
-			backpropagate(t.getParent(), machine, goalVal, moveList);
+		if (t.getParent() != null) { // Base case is parent == null, in that case we don't do anything else
+			backPropagate(t.getParent(), machine, goalVal, moveList);
 		}
 	}
 
@@ -161,5 +164,30 @@ public class utils {
 			jointMove[i] = legalMoves[i][randint];
 		}
 		return jointMove;
+	}
+
+	public static Pair<Move,GameTree> MCTS(GameTree node, StateMachine machine, int timeLimit, int maxIter, double C) throws MoveDefinitionException {
+
+		int iter = 0;
+
+		while(iter <= maxIter) {
+
+			int nRoles = node.getNoRoles();
+
+			/* PHASE 1 - SELECTION */
+			Move[] jointMove = new Move[nRoles];
+			int[] jmIndex = new int[nRoles];
+			for (int i = 0; i < nRoles; i++) {
+				jmIndex[i] = UCT(node.getLegalMoves()[i], node.getAllQScores()[i], node.getAllNs()[i], node.getNoSimulation(), C);
+			}
+
+			/* PHASE 2 - EXPANSION */
+
+
+			/* PHASE 3 - PLAYOUT */
+
+			/* PHASE 4 - BACK-PROPAGATION */
+		}
+		return new Pair<Move,GameTree>(new Move(null),new GameTree(null,null,null));
 	}
 }
