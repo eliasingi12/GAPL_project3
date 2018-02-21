@@ -1,7 +1,6 @@
 package GAPL_project3;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -16,7 +15,7 @@ import org.ggp.base.util.statemachine.exceptions.TransitionDefinitionException;
 public class GameTree {
 
 	private GameTree parent;
-	private Map<Move[],GameTree> children = new HashMap<Move[],GameTree>();
+	private Map<List<Move>,GameTree> children = new HashMap<List<Move>,GameTree>();
 	private MachineState state;
 	private StateMachine machine;
 	private Move[][] legalMoves; // 2d array of legal moves for every role [no. roles][no. legal moves for given role]
@@ -85,41 +84,40 @@ public class GameTree {
 
 	public void addChild(List<Move> M) throws MoveDefinitionException, TransitionDefinitionException {
 		MachineState childState = machine.getNextState(state, M);
-		Move[] moves = M.toArray(new Move[M.size()]);
-		children.put(moves, new GameTree(childState,this,machine));
+		//Move[] moves = M.toArray(new Move[M.size()]);
+		children.put(M, new GameTree(childState,this,machine));
 		noChildren += 1;
 	}
 
-	public void addChild(Move[] M) throws MoveDefinitionException, TransitionDefinitionException {
-		List<Move> moves = Arrays.asList(M);
-		addChild(moves);
-	}
+	//public void addChild(Move[] M) throws MoveDefinitionException, TransitionDefinitionException {
+	//	List<Move> moves = Arrays.asList(M);
+	//	addChild(moves);
+	//}
 
 	public GameTree getChild(List<Move> M) throws MoveDefinitionException, TransitionDefinitionException {
-		Move[] moves = M.toArray(new Move[M.size()]);
-		if (children.get(moves) == null) {
+		//Move[] moves = M.toArray(new Move[M.size()]);
+		if (children.get(M) == null) {
 			addChild(M);
 		}
-		return children.get(moves);
+		return children.get(M);
 	}
 
-	public GameTree getChild(Move[] M) throws MoveDefinitionException, TransitionDefinitionException {
-		List<Move> moves = Arrays.asList(M);
-		return getChild(moves);
-	}
+	//public GameTree getChild(Move[] M) throws MoveDefinitionException, TransitionDefinitionException {
+	//	List<Move> moves = Arrays.asList(M);
+	//	return getChild(moves);
+	//}
 
 	public boolean hasChild(List<Move> M) {
-		Move[] moves = M.toArray(new Move[M.size()]);
-		return (children.get(moves) != null);
-	}
-
-	public boolean hasChild(Move[] M) {
 		return (children.get(M) != null);
 	}
 
+	//public boolean hasChild(Move[] M) {
+	//	return (children.get(M) != null);
+	//}
+
 	public GameTree[] getChildren() {
 		List<GameTree> arr = new ArrayList<GameTree>();
-		for (Move[] key : children.keySet()) {
+		for (List<Move> key : children.keySet()) {
 		    arr.add(children.get(key));
 		}
 		return arr.toArray(new GameTree[arr.size()]);

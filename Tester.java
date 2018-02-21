@@ -30,15 +30,19 @@ public class Tester {
 			System.out.println(x);
 		}
 
-		while(!jm.isEmpty())
-		{
-			test.addChild(jm.remove(0));
-		}
+		//while(!jm.isEmpty())
+		//{
+		//	test.addChild(jm.remove(0));
+		//}
+
+		//List<Move> jm0 = jm.remove(0);
+		//test.addChild(jm0);
+		//GameTree child = test.getChild(jm0);
 
 		System.out.println(test.toString());
 		Role role = sm.getRoles().get(0);
 		GameTree t;
-		Pair<Move,GameTree> p = utils.MCTS(test, sm, role, 5000, 50);
-
+		Pair<Move,GameTree> p = utils.MCTS(test, sm, role, 5000000, 50);
+		System.out.println(p.getKey());
 	}
 }

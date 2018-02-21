@@ -5,7 +5,6 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
 import java.util.concurrent.TimeoutException;
@@ -76,11 +75,11 @@ public class utils {
 	 * are prioritised). Typical values for C are in the interval [0,100]
 	 * @return next Move-index for a given role.
 	 */
-	public static int UCT(Move[] moves, double[] Qs, int[] Ns, int N, double C) {
+	public static int UCT(double[] Qs, int[] Ns, int N, double C) {
 		double max = Double.MIN_VALUE;
 		int returnIndex = 0;
 		double val;
-		for(int i = 0; i < moves.length; i++) {
+		for(int i = 0; i < Qs.length; i++) {
 			if (Ns[i] == 0 && C != 0) return i;
 			val = Qs[i] + C*Math.sqrt(Math.log((double) N)/((double) Ns[i]));
 			if (val > max) {
@@ -111,9 +110,9 @@ public class utils {
 			}
 			return goalValues;
 		}else{
-			Pair<Move[],Integer[]> randMove = getRandJointMoves(t.getLegalMoves()); // Are we SURE the random jointMove created appear in the same order
+			Pair<List<Move>,Integer[]> randMove = getRandJointMoves(t.getLegalMoves()); // Are we SURE the random jointMove created appear in the same order
 																	// that they would be stored in the GameTree t?
-			GameTree randChild = t.getChild(Arrays.asList(randMove.getKey()));
+			GameTree randChild = t.getChild(randMove.getKey());
 			return rollout(randChild, machine);
 		}
 	}
@@ -122,7 +121,7 @@ public class utils {
 	 * After rollout/simulation from a chosen node/GameTree/state all ancestor
 	 * nodes' Q values for the chosen node to simulate a random game from must
 	 * be updated
-	 * @param t - Current node in rollout
+	 * @param t - Parent node
 	 * @param machine - initalized StateMachine with the relevant game description
 	 * @param goalVal - array of double goal values found from the random
 	 * simulation; values must be in the same order as the StateMachine would
@@ -156,8 +155,8 @@ public class utils {
 	 * @return Array of Move objects for every role. This assumes roles are
 	 * indexed in the same order as a StateMachine would fetch them.
 	 */
-	public static Pair<Move[],Integer[]> getRandJointMoves(Move[][] legalMoves) {
-		Move[] jointMove = new Move[legalMoves.length];
+	public static Pair<List<Move>,Integer[]> getRandJointMoves(Move[][] legalMoves) {
+		List<Move> jointMove = new ArrayList<>();
 		Integer[] jointMoveIdx = new Integer[legalMoves.length];
 		int noLegalMoves;
 		int randint;
@@ -165,15 +164,15 @@ public class utils {
 			noLegalMoves = legalMoves[i].length;
 			randint = (new Random()).nextInt(noLegalMoves);
 			jointMoveIdx[i] = (Integer) randint;
-			jointMove[i] = legalMoves[i][randint];
+			jointMove.add(legalMoves[i][randint]);
 		}
-		return new Pair<Move[],Integer[]>(jointMove,jointMoveIdx);
+		return new Pair<List<Move>,Integer[]>(jointMove,jointMoveIdx);
 	}
 
-	public static Move[] getJointMove(int[] idx, Move[][] legalMoves) {
-		Move[] jm = new Move[idx.length];
+	public static List<Move> getJointMove(int[] idx, Move[][] legalMoves) {
+		List<Move> jm = new ArrayList<>();
 		for (int i = 0; i < idx.length; i++) {
-			jm[i] = legalMoves[i][idx[i]];
+			jm.add(legalMoves[i][idx[i]]);
 		}
 		return jm;
 	}
@@ -203,9 +202,9 @@ public class utils {
 				GameTree currentNode = node;
 
 				/* PHASE 1 - SELECTION */
-				Pair<int[],Move[]> jmoves = selection(currentNode,C);
+				Pair<int[],List<Move>> jmoves = selection(currentNode,C);
 				int[] jmIndex = jmoves.getKey();
-				Move[] jm = jmoves.getValue();
+				List<Move> jm = jmoves.getValue();
 
 				takenMoves.add(jmIndex);
 
@@ -261,14 +260,14 @@ public class utils {
 		return false;
 	}
 
-	public static Pair<int[],Move[]> selection(GameTree currentNode, double C) {
+	public static Pair<int[],List<Move>> selection(GameTree currentNode, double C) {
 		int nRoles = currentNode.getNoRoles();
 		int[] jmIndex = new int[nRoles];
 		for (int i = 0; i < nRoles; i++) {
-			jmIndex[i] = UCT(currentNode.getLegalMoves()[i], currentNode.getAllQScores()[i], currentNode.getAllNs()[i], currentNode.getNoSimulation(), C);
+			jmIndex[i] = UCT(currentNode.getAllQScores()[i], currentNode.getAllNs()[i], currentNode.getNoSimulation(), C);
 		}
-		Move[] jm = getJointMove(jmIndex, currentNode.getLegalMoves());
-		return new Pair<int[],Move[]>(jmIndex,jm);
+		List<Move> jm = getJointMove(jmIndex, currentNode.getLegalMoves());
+		return new Pair<int[],List<Move>>(jmIndex,jm);
 	}
 
 }
