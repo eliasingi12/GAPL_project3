@@ -218,28 +218,16 @@ public class utils {
 					timesUp(start,timeLimit);
 				}
 
-				if(!machine.isTerminal(currentNode.getState())){
-					System.out.println("State is not terminal");
-					/* PHASE 2 - EXPANSION */
-					GameTree child = currentNode.getChild(jm);
+				/* PHASE 2 - EXPANSION */
+				GameTree child = currentNode.getChild(jm);
 
-					/* PHASE 3 - PLAYOUT */
-					timesUp(start,timeLimit);
-					double[] goalValues = rollout(child, machine);
+				/* PHASE 3 - PLAYOUT */
+				timesUp(start,timeLimit);
+				double[] goalValues = rollout(child, machine);
 
-					/* PHASE 4 - BACK-PROPAGATION */
-					timesUp(start,timeLimit);
-					backPropagate(child.getParent(), machine, goalValues, takenMoves);
-				}
-				else
-				{
-					System.out.println("State is terminal");
-					double[] goalValues = new double[currentNode.getNoRoles()];
-					for(int i = 0; i < currentNode.getNoRoles(); i++) {
-						goalValues[i] = (double) machine.getGoal(currentNode.getState(), currentNode.getRoles().get(i));
-					}
-					backPropagate(currentNode.getParent(), machine, goalValues, takenMoves);
-				}
+				/* PHASE 4 - BACK-PROPAGATION */
+				timesUp(start,timeLimit);
+				backPropagate(child.getParent(), machine, goalValues, takenMoves);
 
 			}
 		} catch (TimeoutException e) {
