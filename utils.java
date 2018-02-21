@@ -209,25 +209,33 @@ public class utils {
 				takenMoves.add(jmIndex);
 
 				while(currentNode.hasChild(jm)) {
-					jmoves = selection(currentNode.getChild(jm),C);
-					jmIndex = jmoves.getKey();
-					jm = jmoves.getValue();
-
 					takenMoves.add(jmIndex);
 					currentNode = currentNode.getChild(jm);
+
+					if (!currentNode.isTerminal()) {
+						jmoves = selection(currentNode.getChild(jm),C);
+						jmIndex = jmoves.getKey();
+						jm = jmoves.getValue();
+					}
+
 					timesUp(start,timeLimit);
 				}
 
 				/* PHASE 2 - EXPANSION */
-				GameTree child = currentNode.getChild(jm);
+				GameTree child;
+				GameTree rolloutNode = currentNode;
+				if (!currentNode.isTerminal()) {
+					child = currentNode.getChild(jm);
+					rolloutNode = child;
+				}
 
 				/* PHASE 3 - PLAYOUT */
 				timesUp(start,timeLimit);
-				double[] goalValues = rollout(child, machine);
+				double[] goalValues = rollout(rolloutNode, machine);
 
 				/* PHASE 4 - BACK-PROPAGATION */
 				timesUp(start,timeLimit);
-				backPropagate(child.getParent(), machine, goalValues, takenMoves);
+				backPropagate(rolloutNode.getParent(), machine, goalValues, takenMoves);
 
 			}
 		} catch (TimeoutException e) {

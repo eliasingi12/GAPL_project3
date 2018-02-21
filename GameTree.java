@@ -64,6 +64,10 @@ public class GameTree {
 		return state;
 	}
 
+	public boolean isTerminal() {
+		return machine.isTerminal(state);
+	}
+
 	public Move[][] getLegalMoves() {
 		return legalMoves;
 	}

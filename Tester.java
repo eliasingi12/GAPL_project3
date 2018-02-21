@@ -35,14 +35,20 @@ public class Tester {
 		//	test.addChild(jm.remove(0));
 		//}
 
-		//List<Move> jm0 = jm.remove(0);
-		//test.addChild(jm0);
-		//GameTree child = test.getChild(jm0);
+		/*
+		List<Move> jm0 = jm.remove(0);
+		test.addChild(jm0);
+		GameTree child = test.getChild(jm0);
+
+		int idx = child.getRoleIndex(child.getRoles().get(1));
+		System.out.println("Idx: "+idx);
+		*/
 
 		System.out.println(test.toString());
 		Role role = sm.getRoles().get(0);
 		GameTree t;
-		Pair<Move,GameTree> p = utils.MCTS(test, sm, role, 5000000, 50);
+		Pair<Move,GameTree> p = utils.MCTS(test, sm, role, 5000, 50);
 		System.out.println(p.getKey());
+		System.out.println(sm.getLegalMoves(init, sm.getRoles().get(0)));
 	}
 }
