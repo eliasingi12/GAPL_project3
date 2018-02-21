@@ -60,10 +60,11 @@ public class utils {
 	}
 
 	/**
-	 * Decides the next Move action to take/examine for a given role based on
-	 * the current node's Q values for its children and the number of times a
-	 * child node has been visited. The arrays moves[], Qs[] and Ns[] must all
-	 * be of the same size.
+	 * Returns the index of the next Move action (node to visit) to take/examine
+	 * for a given role based on the current node's Q values for its children and
+	 * the number of times a child node has been visited. The move-index chosen will
+	 * be the one that maximizes the moves UTC value. The arrays moves[], Qs[] and Ns[]
+	 * must all be of the same size.
 	 * @param moves - all legal moves from the current node's state for a
 	 * given role
 	 * @param Qs - Q values for all roles' moves from the current state
@@ -72,7 +73,7 @@ public class utils {
 	 * @param C - controls exploration (higher C => values less explored are
 	 * prioritised)  vs. exploitation (lower C => values with better Q score
 	 * are prioritised). Typical values for C are in the interval [0,100]
-	 * @return next Move for a given role
+	 * @return next Move-index for a given role.
 	 */
 	public static int UCT(Move[] moves, double[] Qs, int[] Ns, int N, double C) {
 		double max = Double.MIN_VALUE;
@@ -166,6 +167,17 @@ public class utils {
 		return jointMove;
 	}
 
+
+	/**
+	 *
+	 * @param node
+	 * @param machine
+	 * @param timeLimit
+	 * @param maxIter
+	 * @param C
+	 * @return
+	 * @throws MoveDefinitionException
+	 */
 	public static Pair<Move,GameTree> MCTS(GameTree node, StateMachine machine, int timeLimit, int maxIter, double C) throws MoveDefinitionException {
 
 		int iter = 0;
