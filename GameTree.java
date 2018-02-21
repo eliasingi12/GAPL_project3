@@ -18,16 +18,17 @@ public class GameTree {
 	private Map<Move[],GameTree> children = new HashMap<Move[],GameTree>();
 	private MachineState state;
 	private StateMachine machine;
-	private Move[][] legalMoves; // 2d array [no. roles][no. legal moves for given role]
+	private Move[][] legalMoves; // 2d array of legal moves for every role [no. roles][no. legal moves for given role]
 	private List<Role> roles;
+	private int nRoles;
 	private double[][] Qs; // 2d array of Q values for each role for each move
 	private int[][] Ns;
 	private int N = 0;
 	private int noChildren = 0;
 
-	public GameTree(MachineState s, GameTree p, StateMachine sm) throws MoveDefinitionException {
-		state = s;
-		parent = p;
+	public GameTree(MachineState state, GameTree parent, StateMachine sm) throws MoveDefinitionException {
+		this.state = state;
+		this.parent = parent;
 		machine = sm;
 		initalize();
 	}
@@ -35,9 +36,14 @@ public class GameTree {
 	private void initalize() throws MoveDefinitionException {
 		// Init legal moves and Qs and Ns to 0
 		roles = machine.getRoles();
+		nRoles = roles.size();
+		legalMoves = new Move[nRoles][];
+		Qs = new double[nRoles][];
+		Ns = new int[nRoles][];
+		Move[] movesArr;
 		for(int i = 0; i < roles.size(); i++) {
 			List<Move> moves = machine.getLegalMoves(state, roles.get(i));
-			Move[] movesArr = moves.toArray(new Move[moves.size()]);
+			movesArr = moves.toArray(new Move[moves.size()]);
 			legalMoves[i] = movesArr;
 			Qs[i] = new double[movesArr.length];
 			Ns[i] = new int[movesArr.length];
@@ -61,10 +67,9 @@ public class GameTree {
 	}
 
 	public int getNoRoles() {
-		return roles.size();
+		return nRoles;
 	}
 
-	// addChild is called with jointMoves
 	public void addChild(List<Move> M) throws MoveDefinitionException, TransitionDefinitionException {
 		MachineState childState = machine.getNextState(state, M);
 		Move[] moves = M.toArray(new Move[M.size()]);
@@ -88,7 +93,7 @@ public class GameTree {
 		return arr.toArray(new GameTree[arr.size()]);
 	}
 
-	public double[][] getQScores() {
+	public double[][] getAllQScores() {
 		return Qs;
 	}
 

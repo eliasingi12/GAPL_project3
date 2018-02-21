@@ -14,28 +14,24 @@ public class Tester {
 	public static void main(String[] args) throws IOException, MoveDefinitionException, TransitionDefinitionException{
 
 		String prefix = System.getProperty("user.dir") + "/src/main/java/GAPL_project3/";
-		StateMachine state = utils.getGameSM(prefix + "tictactoeXwin.txt");
+		StateMachine sm = utils.getGameSM(prefix + "tictactoeXwin.txt");
 
-		MachineState init = state.getInitialState();
-		GameTree test = new GameTree(init, null);
+		MachineState init = sm.getInitialState();
+		GameTree test = new GameTree(init, null, sm);
 
-		// Move random = RandomGamer.stateMachineSelectMove(100);
-		List<List<Move>> jm = state.getLegalJointMoves(init);
-		System.out.println(jm);
-		List<MachineState> next = state.getNextStates(init);
-
-		for(MachineState x : state.getNextStates(init)){
+		List<List<Move>> jm = sm.getLegalJointMoves(init);
+		System.out.println("Legal moves: "+jm);
+		System.out.println("\nNext possible states:");
+		for(MachineState x : sm.getNextStates(init)){
 			System.out.println(x);
 		}
 
-		//Move[] arr = jm.toArray(new Move[jm.size()]);
 		while(!jm.isEmpty())
 		{
-			test.addChild(jm.remove(0), next.remove(0));
+			test.addChild(jm.remove(0));
 		}
 
 		System.out.println(test.toString());
-
 
 	}
 }
