@@ -60,6 +60,10 @@ public class GameTree {
 		return parent;
 	}
 
+	public void setParent(GameTree p) {
+		parent = p;
+	}
+
 	public MachineState getState() {
 		return state;
 	}
@@ -165,11 +169,11 @@ public class GameTree {
 	public String toString()
 	{
 		String s = "\nCurrent state:\n";
-		s += state.toString() + "\n\nChildren:\n";
-		for(GameTree c : this.getChildren())
+		s += state.toString();// + "\n\nChildren:\n";
+		/*for(GameTree c : this.getChildren())
 		{
 			s += c.getState().toString() + "\n";
-		}
+		}*/
 		return s;
 	}
 }

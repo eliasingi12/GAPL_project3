@@ -138,6 +138,7 @@ public class utils {
 	 */
 	public static void backPropagate(GameTree t, StateMachine machine, double[] goalVal, ArrayList<int[]> moveList) {
 		int[] theMoves = moveList.remove(moveList.size()-1);
+		t.incrNoSimulation();
 		for(int i = 0; i < theMoves.length; i++) {
 			t.updateQScore(i, theMoves[i], goalVal[i]);
 			t.incrNs(i, theMoves[i]);
@@ -189,14 +190,15 @@ public class utils {
 	 * @throws TransitionDefinitionException
 	 * @throws GoalDefinitionException
 	 */
-	public static Pair<Move,GameTree> MCTS(GameTree node, StateMachine machine, Role role, long timeLimit, double C)
+	public static Pair<Move,GameTree> MCTS(GameTree node, StateMachine machine, Role role, int maxIter, long timeLimit, double C)
 			throws MoveDefinitionException, TransitionDefinitionException, GoalDefinitionException {
 
 		long start = System.currentTimeMillis();
 		int roleIndex = node.getRoleIndex(role);
+		int iter = 1;
 
 		try {
-			while(!timesUp(start,timeLimit)) {
+			while(!timesUp(start,timeLimit) && iter <= maxIter) {
 
 				ArrayList<int[]> takenMoves = new ArrayList<>();
 				GameTree currentNode = node;
@@ -209,13 +211,13 @@ public class utils {
 				takenMoves.add(jmIndex);
 
 				while(currentNode.hasChild(jm)) {
-					takenMoves.add(jmIndex);
 					currentNode = currentNode.getChild(jm);
 
 					if (!currentNode.isTerminal()) {
 						jmoves = selection(currentNode.getChild(jm),C);
 						jmIndex = jmoves.getKey();
 						jm = jmoves.getValue();
+						takenMoves.add(jmIndex);
 					}
 
 					timesUp(start,timeLimit);
@@ -237,6 +239,7 @@ public class utils {
 				timesUp(start,timeLimit);
 				backPropagate(rolloutNode.getParent(), machine, goalValues, takenMoves);
 
+				iter++;
 			}
 		} catch (TimeoutException e) {
 			return new Pair<Move,GameTree>(bestMove(node, roleIndex),node);
@@ -264,6 +267,7 @@ public class utils {
 	public static boolean timesUp(long start, long timeLimit) throws TimeoutException {
 		long stop = System.currentTimeMillis();
 		if(stop - start >= timeLimit) {
+			System.out.println("Timeout");
 			throw new TimeoutException();
 		}
 		return false;
