@@ -27,14 +27,12 @@ public class utils {
 
 	/**
 	 * Takes an absolute path to a GDL file and returns a StateMachine,
-     * intialized with the game description from gdlFile
+     * intialized with the game description from gdlFile.
 	 * @param gdlFile - Absolute path to a GDL file
 	 * @return initalized StateMachine
 	 * @throws IOException
 	 */
 	public static StateMachine getGameSM(String gdlFile) throws IOException{
-		// Takes in absolute path of a GDL file and returns a new state machine with that description
-
 		FileInputStream fstream = new FileInputStream(gdlFile);
 		BufferedReader br = new BufferedReader(new InputStreamReader(fstream));
 		String strLine = br.readLine();
@@ -60,13 +58,31 @@ public class utils {
 	}
 
 	/**
+	 * Finds the moves with the best computed UCT values for each role.
+	 * @param currentNode - the GameTree/state which legal moves we wish to
+	 * apply UCT to.
+	 * @param C - exploration/exploitation factor.
+	 * @return Pair of an int array of indices into the legalMoves of currentNode
+	 * which correspond to the selected moves, f.i. i = int[3] is move i for
+	 * role 3 as well as the selected joint move represented by a list of Move
+	 * objects.
+	 */
+	public static Pair<int[],List<Move>> selection(GameTree currentNode, double C) {
+		int nRoles = currentNode.getNoRoles();
+		int[] jmIndex = new int[nRoles];
+		for (int i = 0; i < nRoles; i++) {
+			jmIndex[i] = UCT(currentNode.getAllQScores()[i], currentNode.getAllNs()[i], currentNode.getNoSimulation(), C);
+		}
+		List<Move> jm = getJointMove(jmIndex, currentNode.getLegalMoves());
+		return new Pair<int[],List<Move>>(jmIndex,jm);
+	}
+
+	/**
 	 * Returns the index of the next Move action (node to visit) to take/examine
 	 * for a given role based on the current node's Q values for its children and
 	 * the number of times a child node has been visited. The move-index chosen will
-	 * be the one that maximizes the moves UTC value. The arrays moves[], Qs[] and Ns[]
-	 * must all be of the same size.
-	 * @param moves - all legal moves from the current node's state for a
-	 * given role
+	 * be the one that maximizes the moves UCT value. The Qs[] and Ns[] must
+	 * be of the same size.
 	 * @param Qs - Q values for all roles' moves from the current state
 	 * @param Ns - number of times a role has chosen a specific move
 	 * @param N - number of times current state has been visited
@@ -100,7 +116,8 @@ public class utils {
 	 * @throws MoveDefinitionException
 	 * @throws TransitionDefinitionException
 	 */
-	public static double[] rollout(GameTree t, StateMachine machine) throws GoalDefinitionException, MoveDefinitionException, TransitionDefinitionException {
+	public static double[] rollout(GameTree t, StateMachine machine)
+			throws GoalDefinitionException, MoveDefinitionException, TransitionDefinitionException {
 		MachineState ms = t.getState();
 		if (machine.isTerminal(ms)) { // Base case
 			List<Role> roles = machine.getRoles();
@@ -109,9 +126,8 @@ public class utils {
 				goalValues[i] = (double) machine.getGoal(ms, roles.get(i));
 			}
 			return goalValues;
-		}else{
-			Pair<List<Move>,Integer[]> randMove = getRandJointMoves(t.getLegalMoves()); // Are we SURE the random jointMove created appear in the same order
-																	// that they would be stored in the GameTree t?
+		}else{ // Recursion
+			Pair<List<Move>,Integer[]> randMove = getRandJointMoves(t.getLegalMoves());
 			GameTree randChild = t.getChild(randMove.getKey());
 			return rollout(randChild, machine);
 		}
@@ -120,8 +136,8 @@ public class utils {
 	/**
 	 * After rollout/simulation from a chosen node/GameTree/state all ancestor
 	 * nodes' Q values for the chosen node to simulate a random game from must
-	 * be updated
-	 * @param t - Parent node
+	 * be updated.
+	 * @param t - Parent node of the node that rollout took place from
 	 * @param machine - initalized StateMachine with the relevant game description
 	 * @param goalVal - array of double goal values found from the random
 	 * simulation; values must be in the same order as the StateMachine would
@@ -134,7 +150,7 @@ public class utils {
 	 * The first int array represents the moves (as indices) each role took in
 	 * the oldest ancestor node. The last int array are the most recent moves
 	 * taken. This assumes the order of roles is the same as the StateMachine
-	 * would fetch them in
+	 * would fetch them in.
 	 */
 	public static void backPropagate(GameTree t, StateMachine machine, double[] goalVal, ArrayList<int[]> moveList) {
 		int[] theMoves = moveList.remove(moveList.size()-1);
@@ -149,10 +165,10 @@ public class utils {
 	}
 
 	/**
-	 * Creates an array of randomly chosen Move actions for every role, in
+	 * Creates an array of randomly chosen Move action for every role, in
 	 * conjunction these represent a joint Move.
-	 * @param legalMoves - Move[][] array, rows represent legal moves for one
-	 * role
+	 * @param legalMoves - Move[][] array, rows are Move[] arrays which contain
+	 * the legal moves for the role represented by that row
 	 * @return Array of Move objects for every role. This assumes roles are
 	 * indexed in the same order as a StateMachine would fetch them.
 	 */
@@ -170,6 +186,12 @@ public class utils {
 		return new Pair<List<Move>,Integer[]>(jointMove,jointMoveIdx);
 	}
 
+	/**
+	 * Creates a List of Moves to represent a joint move.
+	 * @param idx - index array for moves, f.i. i = idx[3] is move i for role 3.
+	 * @param legalMoves - legal moves for an implied current state.
+	 * @return joint move as a list of Move objects.
+	 */
 	public static List<Move> getJointMove(int[] idx, Move[][] legalMoves) {
 		List<Move> jm = new ArrayList<>();
 		for (int i = 0; i < idx.length; i++) {
@@ -179,12 +201,16 @@ public class utils {
 	}
 
 	/**
-	 *
-	 * @param node
-	 * @param machine
-	 * @param timeLimit
-	 * @param maxIter
-	 * @param C
+	 * Monte-Carlo Tree Search. Runs until maximum number of iterations are reached
+	 * or it catches a TimeoutException in which case it stops and returns a
+	 * predicted best move for given role.
+	 * @param node - pointer to a GameTree to use
+	 * @param machine - state machine
+	 * @param role - Role object representing the current player
+	 * @param maxIter - maximum number of iterations the search goes through
+	 * @param timeLimit - maximum time in milliseconds to spend in MCTS
+	 * @param C - exploration/exploitation factor, higher => more exploration,
+	 * lower => more exploitation
 	 * @return
 	 * @throws MoveDefinitionException
 	 * @throws TransitionDefinitionException
@@ -248,6 +274,16 @@ public class utils {
 		return new Pair<Move,GameTree>(bestMove(node, roleIndex),node);
 	}
 
+	/**
+	 * Finds the best move for role (represented by roleIndex) by looking at
+	 * which child node has been visited most often (and as such its Q score is
+	 * likely to be very high)
+	 * @param node - the current GameTree which stores next legal moves and the
+	 * Q and N values for deciding best move
+	 * @param roleIndex - the index of current role, in the order a state machine
+	 * would fetch it
+	 * @return Move object with the highest visit count
+	 */
 	public static Move bestMove(GameTree node, int roleIndex) {
 		int mostVisits = 0;
 		int idx = 0;
@@ -264,6 +300,14 @@ public class utils {
 		return lm[idx];
 	}
 
+	/**
+	 * Measures the time from start and throws an exception if it exceeds the
+	 * time limit.
+	 * @param start - start time in milliseconds
+	 * @param timeLimit - maximum time in milliseconds
+	 * @return false if current time has not exceeded timeLimit
+	 * @throws TimeoutException
+	 */
 	public static boolean timesUp(long start, long timeLimit) throws TimeoutException {
 		long stop = System.currentTimeMillis();
 		if(stop - start >= timeLimit) {
@@ -272,15 +316,4 @@ public class utils {
 		}
 		return false;
 	}
-
-	public static Pair<int[],List<Move>> selection(GameTree currentNode, double C) {
-		int nRoles = currentNode.getNoRoles();
-		int[] jmIndex = new int[nRoles];
-		for (int i = 0; i < nRoles; i++) {
-			jmIndex[i] = UCT(currentNode.getAllQScores()[i], currentNode.getAllNs()[i], currentNode.getNoSimulation(), C);
-		}
-		List<Move> jm = getJointMove(jmIndex, currentNode.getLegalMoves());
-		return new Pair<int[],List<Move>>(jmIndex,jm);
-	}
-
 }
