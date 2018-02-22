@@ -26,35 +26,120 @@ import javafx.util.Pair;
 public class utils {
 
 	/**
-	 * Takes an absolute path to a GDL file and returns a StateMachine,
-     * intialized with the game description from gdlFile.
-	 * @param gdlFile - Absolute path to a GDL file
-	 * @return initalized StateMachine
-	 * @throws IOException
+	 * Monte-Carlo Tree Search. Runs until maximum number of iterations are reached
+	 * or it catches a TimeoutException in which case it stops and returns a
+	 * predicted best move for given role.
+	 * @param node - pointer to a GameTree to use
+	 * @param machine - state machine
+	 * @param role - Role object representing the current player
+	 * @param maxIter - maximum number of iterations the search goes through
+	 * @param timeLimit - maximum time in milliseconds to spend in MCTS
+	 * @param C - exploration/exploitation factor, higher => more exploration,
+	 * lower => more exploitation
+	 * @return
+	 * @throws MoveDefinitionException
+	 * @throws TransitionDefinitionException
+	 * @throws GoalDefinitionException
 	 */
-	public static StateMachine getGameSM(String gdlFile) throws IOException{
-		FileInputStream fstream = new FileInputStream(gdlFile);
-		BufferedReader br = new BufferedReader(new InputStreamReader(fstream));
-		String strLine = br.readLine();
-		StringBuilder sb = new StringBuilder();
+	public static Pair<Move,GameTree> MCTS(GameTree node, StateMachine machine, Role role, int maxIter, long timeLimit, double C)
+			throws MoveDefinitionException, TransitionDefinitionException, GoalDefinitionException {
 
-		while (strLine != null) {
-			if(!strLine.startsWith(";")) {
-				sb.append(strLine).append("\n");
+		long start = System.currentTimeMillis();
+		int roleIndex = node.getRoleIndex(role);
+		int iter = 1;
+
+		try {
+			while(!timesUp(start,timeLimit) && iter <= maxIter) {
+
+				ArrayList<int[]> takenMoves = new ArrayList<>();
+				GameTree currentNode = node;
+
+				/* PHASE 1 - SELECTION */
+				Pair<int[],List<Move>> jmoves = selection(currentNode,C);
+				int[] jmIndex = jmoves.getKey();
+				List<Move> jm = jmoves.getValue();
+
+				takenMoves.add(jmIndex);
+
+				while(currentNode.hasChild(jm)) {
+					currentNode = currentNode.getChild(jm);
+
+					if (!currentNode.isTerminal()) {
+						jmoves = selection(currentNode.getChild(jm),C);
+						jmIndex = jmoves.getKey();
+						jm = jmoves.getValue();
+						takenMoves.add(jmIndex);
+					}
+
+					timesUp(start,timeLimit);
+				}
+
+				/* PHASE 2 - EXPANSION */
+				GameTree child;
+				GameTree rolloutNode = currentNode;
+				if (!currentNode.isTerminal()) {
+					child = currentNode.getChild(jm);
+					rolloutNode = child;
+				}
+
+				/* PHASE 3 - PLAYOUT */
+				timesUp(start,timeLimit);
+				double[] goalValues = rollout(rolloutNode, machine);
+
+				/* PHASE 4 - BACK-PROPAGATION */
+				timesUp(start,timeLimit);
+				backPropagate(rolloutNode.getParent(), machine, goalValues, takenMoves);
+
+				iter++;
 			}
-			strLine = br.readLine();
+		} catch (TimeoutException e) {
+			return new Pair<Move,GameTree>(bestMove(node, roleIndex),node);
 		}
-		br.close();
-		String gd = sb.toString();
-		gd = gd.replaceAll("[\n]+","\n");
 
-		gd = Game.preprocessRulesheet(gd);
-		Game g = Game.createEphemeralGame(gd);
-		List<Gdl> rules = g.getRules();
-		StateMachine s = new ProverStateMachine();
-		s.initialize(rules);
+		return new Pair<Move,GameTree>(bestMove(node, roleIndex),node);
+	}
 
-		return s;
+	/**
+	 * Finds the best move for role (represented by roleIndex) by looking at
+	 * which child node has been visited most often (and as such its Q score is
+	 * likely to be very high)
+	 * @param node - the current GameTree which stores next legal moves and the
+	 * Q and N values for deciding best move
+	 * @param roleIndex - the index of current role, in the order a state machine
+	 * would fetch it
+	 * @return Move object with the highest visit count
+	 */
+	public static Move bestMove(GameTree node, int roleIndex) {
+		int mostVisits = 0;
+		int idx = 0;
+
+		int[] moveCounts = node.getAllNs()[roleIndex];
+		Move[] lm = node.getLegalMoves()[roleIndex];
+
+		for(int i = 0; i < moveCounts.length; i++) {
+			if (moveCounts[i] > mostVisits) {
+				mostVisits = moveCounts[i];
+				idx = i;
+			}
+		}
+		return lm[idx];
+	}
+
+	/**
+	 * Measures the time from start and throws an exception if it exceeds the
+	 * time limit.
+	 * @param start - start time in milliseconds
+	 * @param timeLimit - maximum time in milliseconds
+	 * @return false if current time has not exceeded timeLimit
+	 * @throws TimeoutException
+	 */
+	public static boolean timesUp(long start, long timeLimit) throws TimeoutException {
+		long stop = System.currentTimeMillis();
+		if(stop - start >= timeLimit) {
+			System.out.println("Timeout");
+			throw new TimeoutException();
+		}
+		return false;
 	}
 
 	/**
@@ -201,119 +286,34 @@ public class utils {
 	}
 
 	/**
-	 * Monte-Carlo Tree Search. Runs until maximum number of iterations are reached
-	 * or it catches a TimeoutException in which case it stops and returns a
-	 * predicted best move for given role.
-	 * @param node - pointer to a GameTree to use
-	 * @param machine - state machine
-	 * @param role - Role object representing the current player
-	 * @param maxIter - maximum number of iterations the search goes through
-	 * @param timeLimit - maximum time in milliseconds to spend in MCTS
-	 * @param C - exploration/exploitation factor, higher => more exploration,
-	 * lower => more exploitation
-	 * @return
-	 * @throws MoveDefinitionException
-	 * @throws TransitionDefinitionException
-	 * @throws GoalDefinitionException
+	 * Takes an absolute path to a GDL file and returns a StateMachine,
+     * intialized with the game description from gdlFile.
+	 * @param gdlFile - Absolute path to a GDL file
+	 * @return initalized StateMachine
+	 * @throws IOException
 	 */
-	public static Pair<Move,GameTree> MCTS(GameTree node, StateMachine machine, Role role, int maxIter, long timeLimit, double C)
-			throws MoveDefinitionException, TransitionDefinitionException, GoalDefinitionException {
+	public static StateMachine getGameSM(String gdlFile) throws IOException{
+		FileInputStream fstream = new FileInputStream(gdlFile);
+		BufferedReader br = new BufferedReader(new InputStreamReader(fstream));
+		String strLine = br.readLine();
+		StringBuilder sb = new StringBuilder();
 
-		long start = System.currentTimeMillis();
-		int roleIndex = node.getRoleIndex(role);
-		int iter = 1;
-
-		try {
-			while(!timesUp(start,timeLimit) && iter <= maxIter) {
-
-				ArrayList<int[]> takenMoves = new ArrayList<>();
-				GameTree currentNode = node;
-
-				/* PHASE 1 - SELECTION */
-				Pair<int[],List<Move>> jmoves = selection(currentNode,C);
-				int[] jmIndex = jmoves.getKey();
-				List<Move> jm = jmoves.getValue();
-
-				takenMoves.add(jmIndex);
-
-				while(currentNode.hasChild(jm)) {
-					currentNode = currentNode.getChild(jm);
-
-					if (!currentNode.isTerminal()) {
-						jmoves = selection(currentNode.getChild(jm),C);
-						jmIndex = jmoves.getKey();
-						jm = jmoves.getValue();
-						takenMoves.add(jmIndex);
-					}
-
-					timesUp(start,timeLimit);
-				}
-
-				/* PHASE 2 - EXPANSION */
-				GameTree child;
-				GameTree rolloutNode = currentNode;
-				if (!currentNode.isTerminal()) {
-					child = currentNode.getChild(jm);
-					rolloutNode = child;
-				}
-
-				/* PHASE 3 - PLAYOUT */
-				timesUp(start,timeLimit);
-				double[] goalValues = rollout(rolloutNode, machine);
-
-				/* PHASE 4 - BACK-PROPAGATION */
-				timesUp(start,timeLimit);
-				backPropagate(rolloutNode.getParent(), machine, goalValues, takenMoves);
-
-				iter++;
+		while (strLine != null) {
+			if(!strLine.startsWith(";")) {
+				sb.append(strLine).append("\n");
 			}
-		} catch (TimeoutException e) {
-			return new Pair<Move,GameTree>(bestMove(node, roleIndex),node);
+			strLine = br.readLine();
 		}
+		br.close();
+		String gd = sb.toString();
+		gd = gd.replaceAll("[\n]+","\n");
 
-		return new Pair<Move,GameTree>(bestMove(node, roleIndex),node);
-	}
+		gd = Game.preprocessRulesheet(gd);
+		Game g = Game.createEphemeralGame(gd);
+		List<Gdl> rules = g.getRules();
+		StateMachine s = new ProverStateMachine();
+		s.initialize(rules);
 
-	/**
-	 * Finds the best move for role (represented by roleIndex) by looking at
-	 * which child node has been visited most often (and as such its Q score is
-	 * likely to be very high)
-	 * @param node - the current GameTree which stores next legal moves and the
-	 * Q and N values for deciding best move
-	 * @param roleIndex - the index of current role, in the order a state machine
-	 * would fetch it
-	 * @return Move object with the highest visit count
-	 */
-	public static Move bestMove(GameTree node, int roleIndex) {
-		int mostVisits = 0;
-		int idx = 0;
-
-		int[] moveCounts = node.getAllNs()[roleIndex];
-		Move[] lm = node.getLegalMoves()[roleIndex];
-
-		for(int i = 0; i < moveCounts.length; i++) {
-			if (moveCounts[i] > mostVisits) {
-				mostVisits = moveCounts[i];
-				idx = i;
-			}
-		}
-		return lm[idx];
-	}
-
-	/**
-	 * Measures the time from start and throws an exception if it exceeds the
-	 * time limit.
-	 * @param start - start time in milliseconds
-	 * @param timeLimit - maximum time in milliseconds
-	 * @return false if current time has not exceeded timeLimit
-	 * @throws TimeoutException
-	 */
-	public static boolean timesUp(long start, long timeLimit) throws TimeoutException {
-		long stop = System.currentTimeMillis();
-		if(stop - start >= timeLimit) {
-			System.out.println("Timeout");
-			throw new TimeoutException();
-		}
-		return false;
+		return s;
 	}
 }
