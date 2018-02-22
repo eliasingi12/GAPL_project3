@@ -15,17 +15,22 @@ import org.ggp.base.util.statemachine.exceptions.TransitionDefinitionException;
 public class GameTree {
 
 	private GameTree parent;
-	private Map<List<Move>,GameTree> children = new HashMap<List<Move>,GameTree>();
-	private MachineState state;
 	private StateMachine machine;
+	private MachineState state;
+	private Move[][] legalMoves = null; // 2d array of legal moves for every role [no. roles][no. legal moves for given role]
+
+	/* Role variables */
 	private List<Role> roles;
 	private Map<Role,Integer> roleIndex = new HashMap<Role,Integer>();
 	private int nRoles;
-	private Move[][] legalMoves = null; // 2d array of legal moves for every role [no. roles][no. legal moves for given role]
+
+	/* Children */
+	private Map<List<Move>,GameTree> children = new HashMap<List<Move>,GameTree>();
+
+	/* Q scores, child and self visit counter*/
 	private double[][] Qs = null; // 2d array of Q values for each role for each move
-	private int[][] Ns = null;
+	private int[][] Ns = null; // Counts how many times each child state has been visited
 	private int N = 0;
-	private int noChildren = 0; // Number of actual initailized child nodes
 
 	public GameTree(MachineState state, GameTree parent, StateMachine sm) throws MoveDefinitionException {
 		this.state = state;
@@ -35,7 +40,7 @@ public class GameTree {
 	}
 
 	private void initalize() throws MoveDefinitionException {
-		// Init legal moves and Qs and Ns to 0
+		// Init legal moves, roles, and Qs and Ns to 0
 		roles = machine.getRoles();
 		nRoles = roles.size();
 		for(int i = 0; i < nRoles; i++) {
@@ -88,42 +93,22 @@ public class GameTree {
 		return roleIndex.get(role).intValue();
 	}
 
-	public int getNoInitializedChildren() {
-		return noChildren;
-	}
 
 	public void addChild(List<Move> M) throws MoveDefinitionException, TransitionDefinitionException {
 		MachineState childState = machine.getNextState(state, M);
-		//Move[] moves = M.toArray(new Move[M.size()]);
 		children.put(M, new GameTree(childState,this,machine));
-		noChildren += 1;
 	}
 
-	//public void addChild(Move[] M) throws MoveDefinitionException, TransitionDefinitionException {
-	//	List<Move> moves = Arrays.asList(M);
-	//	addChild(moves);
-	//}
-
 	public GameTree getChild(List<Move> M) throws MoveDefinitionException, TransitionDefinitionException {
-		//Move[] moves = M.toArray(new Move[M.size()]);
 		if (children.get(M) == null) {
 			addChild(M);
 		}
 		return children.get(M);
 	}
 
-	//public GameTree getChild(Move[] M) throws MoveDefinitionException, TransitionDefinitionException {
-	//	List<Move> moves = Arrays.asList(M);
-	//	return getChild(moves);
-	//}
-
 	public boolean hasChild(List<Move> M) {
 		return (children.get(M) != null);
 	}
-
-	//public boolean hasChild(Move[] M) {
-	//	return (children.get(M) != null);
-	//}
 
 	public GameTree[] getChildren() {
 		List<GameTree> arr = new ArrayList<GameTree>();
@@ -169,11 +154,11 @@ public class GameTree {
 	public String toString()
 	{
 		String s = "\nCurrent state:\n";
-		s += state.toString();// + "\n\nChildren:\n";
-		/*for(GameTree c : this.getChildren())
+		s += state.toString() + "\n\nChildren:\n";
+		for(GameTree c : this.getChildren())
 		{
 			s += c.getState().toString() + "\n";
-		}*/
+		}
 		return s;
 	}
 }
