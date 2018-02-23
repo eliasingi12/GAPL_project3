@@ -27,7 +27,7 @@ public class mtcsGamer2 extends StateMachineGamer {
 
 	@Override
 	public String getName() {
-		return "mtcsGamer";
+		return "mtcsGamer2";
 	}
 
 	@Override
