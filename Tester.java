@@ -51,7 +51,7 @@ public class Tester {
 		int xWin = 0;
 		int oWin = 0;
 
-		int runTime = 5000;
+		int fullTime = 5000;
 		int noop = 100;
 		int playTime;
 
@@ -75,7 +75,7 @@ public class Tester {
 			theJM = new ArrayList<>();
 
 			if(xPlaying) {
-				playTime = runTime;
+				playTime = fullTime;
 			} else {
 				playTime = noop;
 			}
@@ -94,7 +94,7 @@ public class Tester {
 			if(xPlaying) {
 				playTime = noop;
 			} else {
-				playTime = runTime;
+				playTime = fullTime;
 			}
 
 			p = utils.MCTS(treeO, sm, oplayer, maxIter, playTime, 1000);
