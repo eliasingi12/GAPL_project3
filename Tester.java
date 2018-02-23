@@ -2,6 +2,7 @@ package GAPL_project3;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import org.ggp.base.util.statemachine.MachineState;
@@ -22,7 +23,6 @@ public class Tester {
 		StateMachine sm = utils.getGameSM(prefix + "tictactoeXwin.txt");
 
 		MachineState init = sm.getInitialState();
-		GameTree tree = new GameTree(init, null, sm);
 
 		List<List<Move>> jm = sm.getLegalJointMoves(init);
 		//System.out.println("Legal moves: "+jm);
@@ -51,37 +51,74 @@ public class Tester {
 		int xWin = 0;
 		int oWin = 0;
 
-		Role xplayer = tree.getRoles().get(0);
-		Role oplayer = tree.getRoles().get(1);
+		int runTime = 5000;
+		int noop = 100;
+		int playTime;
+
+		GameTree treeX = new GameTree(init, null, sm);
+		GameTree treeO = new GameTree(init, null, sm);
+
+		Role xplayer = treeX.getRoles().get(0);
+		Role oplayer = treeX.getRoles().get(1);
 		Pair<Move,GameTree> p;
+
+		int maxIter = Integer.MAX_VALUE;
+
+		boolean xPlaying = true;
+
+		Move xmove;
+		Move omove;
 
 		List<Move> theJM;
 
-		while(!sm.isTerminal(tree.getState())) {
+		while(!sm.isTerminal(treeX.getState())) {
 			theJM = new ArrayList<>();
 
-			System.out.println(tree.getState().toString());
+			if(xPlaying) {
+				playTime = runTime;
+			} else {
+				playTime = noop;
+			}
 
-			p = utils.MCTS(tree, sm, xplayer, 1000, 2000, 50);
-			tree = p.getValue();
+			System.out.println(treeX.getState().toString());
+
+			p = utils.MCTS(treeX, sm, xplayer, maxIter, playTime, 100);
+			treeX = p.getValue();
 			theJM.add(p.getKey());
+			System.out.println("Legal moves: "+Arrays.toString(treeX.getLegalMoves()[0]));
+			System.out.println("Q scores: "+Arrays.toString(treeX.getAllQScores()[0]));
+			System.out.println("N scores: "+Arrays.toString(treeX.getAllNs()[0]));
 
 			System.out.println(xplayer.toString()+" does: "+p.getKey().toString());
 
-			p = utils.MCTS(tree, sm, oplayer, 1000, 2000, 50);
-			tree = p.getValue();
+			if(xPlaying) {
+				playTime = noop;
+			} else {
+				playTime = runTime;
+			}
+
+			p = utils.MCTS(treeO, sm, oplayer, maxIter, playTime, 1000);
+			treeO = p.getValue();
 			theJM.add(p.getKey());
+			System.out.println("Legal moves: "+Arrays.toString(treeX.getLegalMoves()[1]));
+			System.out.println("Q scores: "+Arrays.toString(treeX.getAllQScores()[1]));
+			System.out.println("N scores: "+Arrays.toString(treeX.getAllNs()[1]));
 
 			System.out.println(oplayer.toString()+" does: "+p.getKey().toString());
 
-			sm.getNextState(tree.getState(), theJM);
-			if(!sm.isTerminal(tree.getState())) {
-				tree = tree.getChild(theJM);
-				tree.setParent(null);
+			xPlaying = !xPlaying;
+
+			sm.getNextState(treeX.getState(), theJM);
+			if(!sm.isTerminal(treeX.getState())) {
+				treeX = treeX.getChild(theJM);
+				treeX.setParent(null);
+				treeO = treeO.getChild(theJM);
+				treeO.setParent(null);
 			}
 		}
 
-		List<Integer> g = sm.getGoals(tree.getState());
+		List<Integer> g = sm.getGoals(treeX.getState());
+		System.out.println(g.toString());
 
 		/*System.out.println(tree.getNs(0, 0));
 		System.out.println(tree.getNs(0, 1));

@@ -65,7 +65,7 @@ public class utils {
 					currentNode = currentNode.getChild(jm);
 
 					if (!currentNode.isTerminal()) {
-						jmoves = selection(currentNode.getChild(jm),C);
+						jmoves = selection(currentNode,C);
 						jmIndex = jmoves.getKey();
 						jm = jmoves.getValue();
 						takenMoves.add(jmIndex);
@@ -84,7 +84,7 @@ public class utils {
 
 				/* PHASE 3 - PLAYOUT */
 				timesUp(start,timeLimit);
-				double[] goalValues = rollout(rolloutNode, machine);
+				double[] goalValues = rollout(rolloutNode.getState(), machine);
 
 				/* PHASE 4 - BACK-PROPAGATION */
 				timesUp(start,timeLimit);
@@ -201,9 +201,8 @@ public class utils {
 	 * @throws MoveDefinitionException
 	 * @throws TransitionDefinitionException
 	 */
-	public static double[] rollout(GameTree t, StateMachine machine)
+	public static double[] rollout(MachineState ms, StateMachine machine)
 			throws GoalDefinitionException, MoveDefinitionException, TransitionDefinitionException {
-		MachineState ms = t.getState();
 		if (machine.isTerminal(ms)) { // Base case
 			List<Role> roles = machine.getRoles();
 			double[] goalValues = new double[roles.size()];
@@ -212,8 +211,8 @@ public class utils {
 			}
 			return goalValues;
 		}else{ // Recursion
-			Pair<List<Move>,Integer[]> randMove = getRandJointMoves(t.getLegalMoves());
-			GameTree randChild = t.getChild(randMove.getKey());
+			List<Move> randMove = machine.getRandomJointMove(ms);
+			MachineState randChild = machine.getNextState(ms, randMove);
 			return rollout(randChild, machine);
 		}
 	}
