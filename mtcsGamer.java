@@ -69,6 +69,7 @@ public class mtcsGamer extends StateMachineGamer {
 			    jointMove.add(theMachine.getMoveFromTerm(sentence));
 			}
 			myTree = myTree.getChild(jointMove);
+			myTree.setParent(null);
 		}
 
 		Pair<Move, GameTree> p;

@@ -44,12 +44,12 @@ public class utils {
 	public static Pair<Move,GameTree> MCTS(GameTree node, StateMachine machine, Role role, int maxIter, long timeLimit, double C)
 			throws MoveDefinitionException, TransitionDefinitionException, GoalDefinitionException {
 
-		long start = System.currentTimeMillis();
+		// long start = System.currentTimeMillis();
 		int roleIndex = node.getRoleIndex(role);
 		int iter = 1;
 
 		try {
-			while(!timesUp(start,timeLimit) && iter <= maxIter) {
+			while(!timesUp(timeLimit) && iter <= maxIter) {
 
 				ArrayList<int[]> takenMoves = new ArrayList<>();
 				GameTree currentNode = node;
@@ -71,7 +71,7 @@ public class utils {
 						takenMoves.add(jmIndex);
 					}
 
-					timesUp(start,timeLimit);
+					timesUp(timeLimit);
 				}
 
 				/* PHASE 2 - EXPANSION */
@@ -83,11 +83,11 @@ public class utils {
 				}
 
 				/* PHASE 3 - PLAYOUT */
-				timesUp(start,timeLimit);
+				timesUp(timeLimit);
 				double[] goalValues = rollout(rolloutNode.getState(), machine);
 
 				/* PHASE 4 - BACK-PROPAGATION */
-				timesUp(start,timeLimit);
+				timesUp(timeLimit);
 				backPropagate(rolloutNode.getParent(), machine, goalValues, takenMoves);
 
 				iter++;
@@ -133,9 +133,9 @@ public class utils {
 	 * @return false if current time has not exceeded timeLimit
 	 * @throws TimeoutException
 	 */
-	public static boolean timesUp(long start, long timeLimit) throws TimeoutException {
-		long stop = System.currentTimeMillis();
-		if(stop - start >= timeLimit) {
+	public static boolean timesUp(long timeLimit) throws TimeoutException {
+		// long stop = System.currentTimeMillis();
+		if(System.currentTimeMillis() >= timeLimit - 500) {
 			System.out.println("Timeout");
 			throw new TimeoutException();
 		}
