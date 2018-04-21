@@ -246,6 +246,8 @@ public class utils {
 		if (t.getParent() != null) { // Base case is parent == null, in that case we don't do anything else
 			backPropagate(t.getParent(), machine, goalVal, moveList);
 		}
+		else
+			t.incrNoIterations();
 	}
 
 	/**

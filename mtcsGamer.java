@@ -22,7 +22,7 @@ public class mtcsGamer extends StateMachineGamer {
 
 	private GameTree myTree;
 	private int steps = Integer.MAX_VALUE;
-
+	private int iter = 0;
 
 
 	@Override
@@ -80,6 +80,12 @@ public class mtcsGamer extends StateMachineGamer {
 		// System.out.println(myTree.toString());
 		Move myMove = p.getKey();
 
+		//System.out.println("\n" + "MTCS Gamer Q scores: " + Arrays.toString(myTree.getAllQScores()[0]));
+		//System.out.println("MTCS Gamer N scores: " + Arrays.toString(myTree.getAllNs()[0]));
+		//System.out.println("Number of iterations mtcsGamer: " + myTree.getNoIterations() + "\n");
+		iter += myTree.getNoIterations();
+		System.out.println("Number of iterations mtcsGamer: " + iter + "\n");
+
 		return myMove;
 	}
 
@@ -100,6 +106,4 @@ public class mtcsGamer extends StateMachineGamer {
 		// TODO Auto-generated method stub
 
 	}
-
-
 }
